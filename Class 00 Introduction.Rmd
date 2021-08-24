@@ -1,0 +1,35 @@
+---
+title: "Multivariate - Introduction"
+subtitle: "August 26th, 2021"
+output:
+  bookdown::html_document2
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+# Introduction
+
+- Welcome!
+- About me
+- About you!
+- [Review syllabus]()
+- [Course materials on Github](https://github.com/hunter-stats/stat717-class-materials)
+
+# Course Goals
+
+- Describe Multivariate Analyses and its purpose
+- Understand how simulation/data generating can help mimic the math
+- Learn and apply techniques for 
+
+# Expectations
+
+- Please keep your camera on if you are able to/comfortable doing so
+- Take notes! The slides are not exhaustive
+- Please speak up if you are having issues with any part of the course (material, homework, class times, discussion).
+    - Utilize discussion boards or email/call me directly
+
+# Questions before we move on to an introduction to R
+
+- then let's look at: file `intro-to-R.R`

@@ -1,0 +1,38 @@
+---
+title: "Intro to R"
+author: "Vitaly"
+date: "8/26/2021"
+output:
+  html_document: default
+---
+
+# Introduction
+
+This is is just text. **TEXT**. 
+
+This section loads the data
+
+```{r}
+library(MVA)
+data(pottery)
+```
+
+# Quick Summary
+
+```{r}
+summary(pottery)
+```
+
+
+# Best Plot Ever
+
+```{r}
+library(ggplot2)
+ggplot(pottery, aes(x = Al2O3)) +
+  geom_histogram()
+
+```
+
+
+
+
