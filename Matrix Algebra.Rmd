@@ -7,9 +7,6 @@ output:
 
 # Basic Matrix Algebra
 
-```{r}
-```
-
 ## Defining Objects
 
 ### Matrices
