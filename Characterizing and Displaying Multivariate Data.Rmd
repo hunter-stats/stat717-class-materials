@@ -1,6 +1,6 @@
 ---
 title: "Characterizing and Displaying Multivariate Data"
-date: "7/02/2021"
+date: "09/02/2021"
 output:
   html_document: default
 ---
@@ -11,8 +11,8 @@ output:
 ```{r}
 library(ggplot2)
 library(dplyr)
-library(readxl)
 library(here)
+source(here('get_book_data.R'))
 
 theme_set(theme_minimal())
 ```
@@ -145,10 +145,7 @@ mat_3_3 <- as.matrix(table_3_3[, -c(1:2)])
 
 new_data <- mvtnorm::rmvnorm(1000, colMeans(mat_3_3), sigma = cov(mat_3_3))
 
-
 head(new_data)
-
-
 
 qqplot(mat_3_3[,"b"], new_data[, "b"])
 lines(c(0,100), y = c(0, 100))
