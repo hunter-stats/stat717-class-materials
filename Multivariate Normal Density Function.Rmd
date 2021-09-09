@@ -1,0 +1,159 @@
+---
+title: "Multivariate Normal Density Function"
+date: "09/10/2021"
+output:
+  html_document: default
+---
+
+# Multivariate Normal Density Function
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(here)
+sigma_a <- matrix(c(10, 8, 8, 10), nrow = 2, byrow = T)
+mvtnorm::rmvnorm(n = 10000, sigma =sigma_a) %>% 
+  as_tibble() %>% 
+  ggplot(aes(x = V1, y = V2)) +
+  geom_density_2d(n = 100, h = c(3, 3))
+det(sigma_a)
+```
+
+```{r}
+sigma_b <- matrix(c(10, 3, 3, 10), nrow = 2, byrow = T)
+mvtnorm::rmvnorm(n = 10000, sigma =sigma_b) %>% 
+  as_tibble() %>% 
+  ggplot(aes(x = V1, y = V2)) +
+  geom_density_2d(n = 100, h = c(3, 3))
+det(sigma_b)
+```
+
+# Properites of MVN
+
+## Standardized Variables
+
+```{r}
+sigma <- matrix(c(4, 2, 3,
+                  2, 5, 6,
+                  3, 6, 8), ncol=3, byrow = TRUE)
+mean <- c(23, 5, -3)
+
+m <- mvtnorm::rmvnorm(10000, mean = mean, sigma = sigma)
+samp_cov <- cov(m)
+samp_means <- colMeans(m)
+```
+
+```{r}
+z <- sapply(1:nrow(m), function(i) {
+  solve(t(chol(samp_cov))) %*% (m[i, ] - samp_means)
+}) %>% t()
+
+cov(z)
+
+colMeans(z)
+```
+
+
+## Chi-square Distribution
+
+```{r}
+chi_sq_samp <- sapply(1:nrow(z), function(i) {
+t(z[i, ]) %*% z[i, ] 
+  
+})
+ggplot() +
+  geom_density(aes(x = chi_sq_samp, color = "Chi Square from MVN")) +
+  geom_density(aes(x = rchisq(100000, df = 3), color = "Chi Square df = 3"))
+
+
+```
+
+
+# Assessing Multivariate Normality
+
+## QQ Plots
+
+
+```{r}
+x <- rnorm(10000, mean = 23, sd = 5)
+
+samp_mean <- mean(x)
+samp_sd <- sd(x)
+
+x_sort <- sort(x)
+samp_quant <- seq_along(x_sort)/length(x_sort)
+
+theo_quant <- qnorm(samp_quant, mean = samp_mean, sd = samp_sd)
+
+plot(x_sort, theo_quant, pch = ".")
+lines(c(-10, 100), c(-10, 100), col = "red")
+```
+
+
+```{r}
+x <- rnorm(10000, mean = 1, sd = 5)^2
+
+samp_mean <- mean(x)
+samp_sd <- sd(x)
+
+x_sort <- sort(x)
+samp_quant <- seq_along(x_sort)/length(x_sort)
+
+theo_quant <- qnorm(samp_quant, mean = samp_mean, sd = samp_sd)
+
+plot(theo_quant, x_sort, pch = ".")
+lines(c(-10, 100), c(-10, 100), col = "red")
+```
+
+```{r}
+qqnorm(x)
+```
+
+# Assessing Normality
+
+```{r}
+table_3_3 <- readr::read_delim(here('ma_book_data','T3_3_BAKER.DAT'), delim = "  ",
+                               col_names = c("x", "y", "corn97bu", "b", "ca", "cu", "fe", "k",
+                                             "mg", "mn", "na", "p", "zn"),
+                               show_col_types = F)
+
+
+mat_3_3 <- as.matrix(table_3_3)
+```
+
+
+```{r}
+bc_trans <- car::powerTransform(mat_3_3[,3:5, drop = F])
+bc_trans
+
+bc_trans_uni <- car::powerTransform(mat_3_3[,3, drop = F])
+bc_trans_uni
+
+
+
+car::bcPower(mat_3_3[,3:5, drop = F], coef(bc_trans)) %>% 
+  pairs()
+
+mat_3_3[,3:5, drop = F] %>% pairs
+
+```
+
+
+```{r}
+l_lambda <- function(lambda, y) {
+  y_lam <- (y^lambda - 1)/lambda
+  n <- length(y)
+  
+  s_lam_2 <- 1/n * sum((y_lam - mean(y_lam))^2)
+  -n/2 * log(s_lam_2) + (lambda - 1) * sum(log(y))
+  
+}
+
+try_lams <- seq(1,6, by = .01)
+f_out <- sapply(try_lams, l_lambda, y = mat_3_3[, 3])
+
+
+plot(try_lams, f_out)
+try_lams[which.max(f_out)]
+```
+
