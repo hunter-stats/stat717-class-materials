@@ -1,6 +1,6 @@
 ---
 title: "Multivariate Normal Density Function"
-date: "09/10/2021"
+date: "09/09/2021"
 output:
   html_document: default
 ---
