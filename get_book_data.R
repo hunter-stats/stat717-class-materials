@@ -8,6 +8,5 @@ if(!dir.exists(here::here('ma_book_data'))) {
   unzip(temp_file, exdir = here::here())
   file.rename(here::here('multivariate_analysis - 3rd Ed/'),
               here::here('ma_book_data'))
-
 }
 

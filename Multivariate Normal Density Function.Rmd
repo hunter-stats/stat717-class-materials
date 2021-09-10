@@ -157,3 +157,13 @@ plot(try_lams, f_out)
 try_lams[which.max(f_out)]
 ```
 
+# HW 3 Data Load Help
+
+```{r}
+table_3_3 <- readr::read_delim(here('ma_book_data','T3_3_BAKER.DAT'), delim = "  ",
+                               col_names = c("x", "y", "corn97bu", "b", "ca", "cu", "fe", "k",
+                                             "mg", "mn", "na", "p", "zn"))
+table_3_7<- readr::read_fwf(here('ma_book_data', 'T3_7_BONE.DAT'))
+colnames(table_3_7) <- c('individual', 'y1', 'y2', 'y3', 'y4')
+```
+
