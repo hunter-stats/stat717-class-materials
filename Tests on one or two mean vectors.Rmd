@@ -1,0 +1,223 @@
+---
+title: "Tests on two or more mean vectors"
+date: "09/23/2021"
+output:
+  html_document: default
+---
+
+# Tests on two or more mean vectors
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(here)
+library(mvtnorm)
+```
+
+
+## Example 5.2.2
+
+```{r}
+table_3_1 <- readr::read_fwf(here('ma_book_data', 'T3_1_HEIGHTWT.DAT'))                        
+colnames(table_3_1) <- c('person', 'height', 'weight')
+```
+
+```{r}
+sigma_2 <- matrix(c(20, 100, 100, 1000),
+                byrow = F, nrow = 2)
+```
+
+```{r}
+h_0 <- matrix(c(70, 170), nrow = 2)
+
+ybar <- colMeans(table_3_1[, -1])
+
+```
+
+```{r}
+n <- nrow(table_3_1)
+
+Z2 <- n * t(ybar - h_0) %*% solve(sigma_2) %*% (ybar - h_0)
+
+qchisq(1 - .05, 2)
+
+
+# reject H0
+Z2 > qchisq(1 - .05, 2)
+
+```
+
+
+## Example 5.3.2
+
+
+```{r}
+t2_stat <- function(prob, p, nu) {
+  # based on Eq 5.7
+  qf(p = prob, df1 = p, df2 = nu - p + 1) * nu * p/
+    (nu -p + 1)
+  
+}
+
+
+
+table_3_4 <- readr::read_fwf(here('ma_book_data','T3_4_CALCIUM.DAT'))
+
+
+
+y_bar <- colMeans(table_3_4[,-1])
+S <- cov(table_3_4[,-1])
+n <- nrow(table_3_4)
+
+h_0 <- c(15, 6, 2.85)
+
+T2 <- n*t(y_bar - h_0) %*% solve(S) %*% (y_bar - h_0)
+
+t2_stat(1 - .05, 3, 9)
+
+```
+
+## Example 5.4.2
+
+```{r}
+table_5_1 <- readr::read_fwf(here('ma_book_data','T5_1_PSYCH.DAT'))
+
+table_5_1 <- table_5_1 %>% 
+  mutate(X1 = ifelse(X1 == 1, 'M', 'F')) 
+
+colnames(table_5_1) <- c("gender", "pictoral", "paper", "tool", "vocab")
+
+
+b <- table_5_1 %>%
+  split(~gender) %>% 
+  purrr::map(function(x) {
+    list(y = colMeans(x[,-1]),
+         S = cov(x[, -1]),
+         n = nrow(x))
+  })
+
+
+S_pl <- 1/(b$F$n + b$M$n - 2) * (((b$F$n - 1) * b$F$S) + ((b$M$n - 1) * b$M$S))
+
+
+T2 <- (b$F$n * b$M$n)/(b$F$n + b$M$n) * 
+  t(b$F$y - b$M$y) %*% solve(S_pl) %*% (b$F$y - b$M$y)
+
+T2
+t2_stat(1 - .01, 4, 62)
+
+```
+
+## Example 5.5
+
+```{r}
+# note sign changes from what is in book - we care about abs. value
+solve(S_pl) %*% (b$F$y - b$M$y)
+```
+
+Procedure 1
+
+```{r}
+t.test(pictoral ~ gender, data = table_5_1)
+t.test(paper ~ gender, data = table_5_1)
+t.test(tool ~ gender, data = table_5_1)
+t.test(vocab ~ gender, data = table_5_1)
+```
+
+## Comparison of testing methods
+
+```{r}
+start_data <- table_5_1[-1]
+(mu <- colMeans(start_data))
+
+(Sigma <- cov(start_data))
+cor(start_data)
+```
+
+```{r}
+library(mvtnorm)
+set.seed(1234)
+
+calc_t2_stat <- function(x, y) {
+  calcs <- list(x, y) %>% 
+    purrr::map(function(i) {
+      list(y = colMeans(i),
+           S = cov(i),
+           n = nrow(i))
+    })
+  
+  
+  S_pl <- 1/(calcs[[1]]$n + calcs[[2]]$n - 2) * 
+    (((calcs[[1]]$n - 1) * calcs[[1]]$S) + ((calcs[[2]]$n - 1) * calcs[[2]]$S))
+  
+  T2 <- (calcs[[1]]$n * calcs[[2]]$n)/(calcs[[1]]$n + calcs[[2]]$n) * 
+    t(calcs[[1]]$y - calcs[[2]]$y) %*% solve(S_pl) %*% (calcs[[1]]$y - calcs[[2]]$y)
+  
+  list(S_pl = S_pl,
+       # convert from matrix to atomic
+       T2 = as.numeric(T2))
+  
+}
+
+
+
+test_char <- purrr::map_dfr(1:1e5, function(iter) {
+  d1 <- rmvnorm(100, mean = mu, sigma = Sigma)
+  
+  mu2 <- mu
+  d2 <- rmvnorm(100, mean = mu2, sigma = Sigma)
+  
+  t2_stat_samp <- calc_t2_stat(d1, d2)
+  t2_comp <- t2_stat(1 - .05, p = ncol(d1), nrow(d1) + nrow(d2) - 2)
+  
+  # calculate univariate tests for each column and extract p.value
+  uni_t_tests <- purrr::map_dbl(1:ncol(d1), function(j) {
+    t.test(d1[,j], d2[,j] )$p.value
+  })
+  
+  a_vect <- solve(t2_stat_samp$S_pl) %*% (colMeans(d1) - colMeans(d2))
+  # turn a_vect into a vector instead of a column vector
+  a_vect <- abs(as.numeric(a_vect))
+  tibble(
+    T2 = t2_stat_samp$T2,
+    t2_comp = t2_comp,
+    
+    pictoral_uni_t_test = uni_t_tests[1],
+    paper_uni_t_test = uni_t_tests[2],
+    tool_uni_t_test = uni_t_tests[3],
+    vocab_uni_t_test = uni_t_tests[4],
+    
+    pictoral_discrim = a_vect[1],
+    paper_discrim = a_vect[2],
+    tool_discrim = a_vect[3],
+    vocab_discrim = a_vect[4]
+  )
+})
+```
+
+```{r}
+mean(with(test_char, T2 > t2_comp))
+
+# sample experiment wise false positive rate
+mean(with(test_char, 
+          pictoral_uni_t_test < .05 |
+            paper_uni_t_test < .05 |
+            tool_uni_t_test < .05 |
+            vocab_uni_t_test < .05
+            ))
+
+# expected experiment wise false positive
+1 - (1 - .05)^4
+
+# sample experiment wise false positive rate (bonferroni correction)
+mean(with(test_char, 
+          pictoral_uni_t_test < .05/4 |
+            paper_uni_t_test < .05/4 |
+            tool_uni_t_test < .05/4 |
+            vocab_uni_t_test < .05/4
+            ))
+# expected bonferroni correction fp
+1 - (1 - .05/4)^4
+```
+
+
