@@ -25,6 +25,8 @@ colnames(table_3_1) <- c('person', 'height', 'weight')
 ```{r}
 sigma_2 <- matrix(c(20, 100, 100, 1000),
                 byrow = F, nrow = 2)
+
+sigma_2
 ```
 
 ```{r}
@@ -32,6 +34,7 @@ h_0 <- matrix(c(70, 170), nrow = 2)
 
 ybar <- colMeans(table_3_1[, -1])
 
+ybar
 ```
 
 ```{r}
@@ -39,23 +42,20 @@ n <- nrow(table_3_1)
 
 Z2 <- n * t(ybar - h_0) %*% solve(sigma_2) %*% (ybar - h_0)
 
-qchisq(1 - .05, 2)
-
+qchisq(1 - .05, df = 2)
 
 # reject H0
 Z2 > qchisq(1 - .05, 2)
-
 ```
 
 
 ## Example 5.3.2
 
-
 ```{r}
 t2_stat <- function(prob, p, nu) {
   # based on Eq 5.7
-  qf(p = prob, df1 = p, df2 = nu - p + 1) * nu * p/
-    (nu -p + 1)
+  qf(p = prob,  df1 = p, df2 = nu - p + 1) * 
+    nu * p/(nu - p + 1)
   
 }
 
@@ -65,14 +65,12 @@ table_3_4 <- readr::read_fwf(here('ma_book_data','T3_4_CALCIUM.DAT'))
 
 
 
-y_bar <- colMeans(table_3_4[,-1])
-S <- cov(table_3_4[,-1])
+(y_bar <- colMeans(table_3_4[,-1]))
+(S <- cov(table_3_4[,-1]))
 n <- nrow(table_3_4)
-
 h_0 <- c(15, 6, 2.85)
 
-T2 <- n*t(y_bar - h_0) %*% solve(S) %*% (y_bar - h_0)
-
+(T2 <- n*t(y_bar - h_0) %*% solve(S) %*% (y_bar - h_0))
 t2_stat(1 - .05, 3, 9)
 
 ```
@@ -87,11 +85,11 @@ table_5_1 <- table_5_1 %>%
 
 colnames(table_5_1) <- c("gender", "pictoral", "paper", "tool", "vocab")
 
-
+library(purrr)
 b <- table_5_1 %>%
   split(~gender) %>% 
-  purrr::map(function(x) {
-    list(y = colMeans(x[,-1]),
+  map(function(x) {
+    list(y = colMeans(x[, -1]),
          S = cov(x[, -1]),
          n = nrow(x))
   })
@@ -119,15 +117,24 @@ Procedure 1
 
 ```{r}
 t.test(pictoral ~ gender, data = table_5_1)
+```
+
+```{r}
 t.test(paper ~ gender, data = table_5_1)
+```
+
+```{r}
 t.test(tool ~ gender, data = table_5_1)
+```
+
+```{r}
 t.test(vocab ~ gender, data = table_5_1)
 ```
 
 ## Comparison of testing methods
 
 ```{r}
-start_data <- table_5_1[-1]
+start_data <- as.matrix(table_5_1[-1])
 (mu <- colMeans(start_data))
 
 (Sigma <- cov(start_data))
@@ -138,8 +145,9 @@ cor(start_data)
 library(mvtnorm)
 set.seed(1234)
 
+
 calc_t2_stat <- function(x, y) {
-  calcs <- list(x, y) %>% 
+  calcs <- list(x, y) %>%
     purrr::map(function(i) {
       list(y = colMeans(i),
            S = cov(i),
@@ -147,10 +155,11 @@ calc_t2_stat <- function(x, y) {
     })
   
   
-  S_pl <- 1/(calcs[[1]]$n + calcs[[2]]$n - 2) * 
+  S_pl <- 1 / (calcs[[1]]$n + calcs[[2]]$n - 2) *
     (((calcs[[1]]$n - 1) * calcs[[1]]$S) + ((calcs[[2]]$n - 1) * calcs[[2]]$S))
   
-  T2 <- (calcs[[1]]$n * calcs[[2]]$n)/(calcs[[1]]$n + calcs[[2]]$n) * 
+  T2 <-
+    (calcs[[1]]$n * calcs[[2]]$n) / (calcs[[1]]$n + calcs[[2]]$n) *
     t(calcs[[1]]$y - calcs[[2]]$y) %*% solve(S_pl) %*% (calcs[[1]]$y - calcs[[2]]$y)
   
   list(S_pl = S_pl,
@@ -161,7 +170,7 @@ calc_t2_stat <- function(x, y) {
 
 
 
-test_char <- purrr::map_dfr(1:1e5, function(iter) {
+test_char <- purrr::map_dfr(1:1e3, function(iter) {
   d1 <- rmvnorm(100, mean = mu, sigma = Sigma)
   
   mu2 <- mu
@@ -178,7 +187,7 @@ test_char <- purrr::map_dfr(1:1e5, function(iter) {
   a_vect <- solve(t2_stat_samp$S_pl) %*% (colMeans(d1) - colMeans(d2))
   # turn a_vect into a vector instead of a column vector
   a_vect <- abs(as.numeric(a_vect))
-  tibble(
+  data.frame(
     T2 = t2_stat_samp$T2,
     t2_comp = t2_comp,
     
@@ -193,6 +202,9 @@ test_char <- purrr::map_dfr(1:1e5, function(iter) {
     vocab_discrim = a_vect[4]
   )
 })
+
+test_char
+
 ```
 
 ```{r}
