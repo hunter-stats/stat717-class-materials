@@ -151,3 +151,24 @@ s_t8_3$vectors %>%
 
 ```
 
+
+# Other tools
+
+```{r}
+p_cups_8_3 <- princomp(t8_3 %>% filter(X1 != 1) %>% select(-X1))
+
+summary(p_cups_8_3, loadings = TRUE)
+
+
+```
+
+```{r}
+mvtnorm::rmvnorm(mean = c(1,2,3,4), sigma = diag(c(1,2,3,4)), n = 1000) %>% 
+  princomp() %>% 
+  summary(loadings = TRUE)
+```
+
+```{r}
+biplot(p_cups_8_3)
+```
+
