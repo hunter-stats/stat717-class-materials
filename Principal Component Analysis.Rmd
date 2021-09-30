@@ -1,0 +1,153 @@
+---
+title: "Principal Component Analysis"
+date: "09/30/2021"
+output:
+  html_document: default
+---
+
+
+```{r}
+library(here)
+library(ggplot2)
+library(dplyr)
+
+table3_8 <- readr::read_fwf(here('ma_book_data', 'T3_8_SONS.DAT'))
+```
+
+```{r}
+sub_tab_3_8 <- table3_8[, 1:2]
+
+(ybar <- colMeans(sub_tab_3_8))
+(S <- cov(sub_tab_3_8))
+
+eigen_vals <- eigen(S)
+eigen_vecs <- eigen_vals$vectors
+```
+
+```{r}
+ggplot(sub_tab_3_8, aes(x = X1, y = X2)) +
+  geom_point() +
+  geom_segment(x = ybar[1] - eigen_vecs[1,1]*10, xend = ybar[1] + eigen_vecs[1,1]* 10,
+               y = ybar[2] - eigen_vecs[2,1]*10, yend = ybar[2] + eigen_vecs[2,1]*10,
+               aes(color = "z1")) +
+    geom_segment(x = ybar[1] - eigen_vecs[1,2]*10, xend = ybar[1] + eigen_vecs[1,2]*10,
+               y = ybar[2] - eigen_vecs[2,2]*10, yend = ybar[2] + eigen_vecs[2,2]*10,
+               aes(color = "z2")
+               ) +
+  coord_equal()
+```
+
+Proportion of variance
+
+```{r}
+
+eigen_vals <- eigen(cov(table3_8))
+
+tibble(eigen_vals = eigen_vals$values) %>% 
+  mutate(prop_var = eigen_vals/sum(eigen_vals)) %>% 
+  mutate(cum_prob = cumsum(prop_var))
+```
+
+```{r}
+eigen_vals$vectors[,1]
+```
+
+# Deciding How Many Components to Retain
+
+```{r}
+t8_3 <- readr::read_fwf(here::here('ma_book_data', 'T8_3_FOOTBALL.DAT'))
+
+
+S <- t8_3 %>% 
+  filter(X1 != 1) %>% 
+  select(-X1) %>% 
+  cov
+
+(s_t8_3 <- eigen(S))
+
+
+```
+
+
+```{r}
+eigen_tbl <- tibble(eigen_vals = s_t8_3$values) %>% 
+  mutate(prop_var = eigen_vals/sum(eigen_vals)) %>% 
+  mutate(cum_prob = cumsum(prop_var))
+
+eigen_tbl
+```
+
+```{r}
+eigen_tbl %>% 
+  filter(eigen_vals > mean(eigen_vals))
+```
+
+```{r}
+eigen_tbl %>% 
+  mutate(eigenvalue_number = 1:n()) %>% 
+  ggplot(aes(x = eigenvalue_number, y = eigen_vals)) +
+  geom_point() + 
+  geom_line()
+```
+
+```{r}
+
+u <- function(n, p, eigens) {
+  bar_lam <- mean(eigens)
+  k <- length(eigens)
+  
+  (n - (2*p + 11)/6) *  (k *log(bar_lam) - sum(log(eigens)))
+  
+  
+  
+}
+
+n <- nrow(filter(t8_3, X1 != 1))
+p <- ncol(t8_3) - 1 # drop the group column 
+
+u(n = n,
+  p = p,
+  eigens = eigen_tbl$eigen_vals
+  )
+
+eigen_tbl %>% 
+  mutate(k = n():1) %>% 
+  mutate(df = 1/2 * (k-1) * (k + 2)) %>% 
+  mutate(chi2_05 = qchisq(.95, df = df)) %>% 
+  mutate(u = purrr::map_dbl(k, function(k) u(n = n, p = p, eigens = rev(eigen_tbl$eigen_vals)[1:k] )))
+
+
+```
+
+
+
+ Uncorrelated examples
+ 
+```{r}
+
+mvtnorm::rmvnorm(mean = c(1,2,3,4), sigma = diag(c(1,2,3,4)), n = 1000) %>% 
+  cov() %>% 
+  eigen
+
+
+
+mvtnorm::rmvnorm(mean = c(1,2,3,4), sigma = diag(c(1,2,3,4)), n = 1000) %>% 
+  cor() %>% 
+  eigen
+
+
+```
+
+Variable Selection
+
+```{r}
+s_t8_3
+```
+
+```{r}
+s_t8_3$vectors %>% 
+  abs() %>% 
+  apply(2, which.max) # find the variable with the highest eigenvector value
+
+```
+
