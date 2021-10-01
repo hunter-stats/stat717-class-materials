@@ -1,0 +1,168 @@
+---
+title: "R Homework"
+output: html_notebook
+---
+
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(purrr)
+library(readr)
+
+
+
+table_3_7 <- readr::read_fwf(here::here("ma_book_data","T3_7_BONE.DAT"))
+colnames(table_3_7) <- c("Indiv", "y1", "y2", "y3", "y4")
+mat_3_7 <- as.matrix(table_3_7[, -1])
+mat_3_7
+```
+
+## a 
+
+```{r}
+purrr::walk(1:ncol(mat_3_7), function(j) {
+  qqnorm(mat_3_7[, j], 
+         ylab = paste("Sample Quantiles", colnames(mat_3_7)[j]))
+  qqline(mat_3_7[, j])
+})
+
+
+create_sample_quantiles <- function(j) {
+  qqnorm(mat_3_7[, j], 
+         ylab = paste("Sample Quantiles", colnames(mat_3_7)[j]))
+  qqline(mat_3_7[, j])
+}
+
+purrr::walk(1:ncol(mat_3_7), create_sample_quantiles)
+
+create_sample_quantiles(1)
+create_sample_quantiles(2)
+create_sample_quantiles(3)
+create_sample_quantiles(4)
+```
+
+## b
+
+```{r}
+skew_func <- function(y) {
+  sqrt(length(y)) * sum((y - mean(y))^3)/
+    sum((y - mean(y))^2)^{3/2}
+}
+
+kurt_func <- function(y) {
+  length(y) * sum((y - mean(y))^4)/
+    sum((y - mean(y))^2)^{2}
+}
+
+out <- purrr::map(colnames(mat_3_7), function(j) {
+  c(
+    skew = skew_func(mat_3_7[, j]),
+    kurt = kurt_func(mat_3_7[, j]),
+    moments_skew = moments::skewness(mat_3_7[, j]),
+    moments_kurt = moments::kurtosis(mat_3_7[, j])
+  )
+})
+
+out
+
+
+out <- list()
+for (j in colnames(mat_3_7)) {
+  out[[j]] <- c(
+    skew = skew_func(mat_3_7[, j]),
+    kurt = kurt_func(mat_3_7[, j]),
+    moments_skew = moments::skewness(mat_3_7[, j]),
+    moments_kurt = moments::kurtosis(mat_3_7[, j])
+  )
+}
+
+```
+
+
+## c
+
+```{r}
+dag_y <- function(y){
+  sort_y <- sort(y)
+  n <- length(y)
+  
+  D <- sum((1:n - 1/2*(n + 1)) * sort_y)/
+    sqrt(n^(3) * sum((y - mean(y))^2))
+  
+  Y <- sqrt(n) * (D - 1/(2 * sqrt(pi)))/.02998598
+  
+  Y
+}
+
+
+dag_y(mat_3_7[,1])
+```
+
+# d
+
+```{r}
+x <- LETTERS
+
+x[5]
+x[-5]
+
+x[-(1:10)]
+```
+
+```{r}
+lin_mud <- function(y) {
+  n <- length(y)
+  
+  x_val <- numeric(20)
+  for (i in 1:n) {
+    x_val[i] <- 1/n * (sum(y[-i]^2) - sum(y[-i])^2/(n - 1)) ^ (1/3)
+  }
+  
+  # if you wanted 10th x - then you had to use all but the 10th y
+  
+  r <- cor(y, x_val)
+  
+  z <- atanh(r)
+  
+  # z <- 1/2 *(log((1 + r)/(1 - r)))
+  z
+}
+
+lin_mud(mat_3_7[,1])
+```
+
+
+
+```{r}
+purrr::map(colnames(mat_3_7), function(j) {
+  list(
+    var = j,
+    skew = skew_func(mat_3_7[, j]),
+    # moments_skew = moments::skewness(mat_3_7[,j]),
+    kurt = kurt_func(mat_3_7[, j]),
+    # moments_kurt = moments::kurtosis(mat_3_7[,j]),
+    
+    dag_Y = dag_y(mat_3_7[, j]),
+    lin_mud_stat = lin_mud(mat_3_7[, j])
+    
+    
+  )
+})
+```
+
+```{r}
+purrr::map_dfr(colnames(mat_3_7), function(j) {
+  data.frame(
+    var = j,
+    skew = skew_func(mat_3_7[, j]),
+    moments_skew = moments::skewness(mat_3_7[, j]),
+    kurt = kurt_func(mat_3_7[, j]),
+    moments_kurt = moments::kurtosis(mat_3_7[, j]),
+    
+    dag_Y = dag_y(mat_3_7[, j]),
+    lin_mud_stat = lin_mud(mat_3_7[, j])
+  )
+})
+```
+
