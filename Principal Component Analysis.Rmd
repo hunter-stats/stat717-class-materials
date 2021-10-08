@@ -50,6 +50,8 @@ tibble(eigen_vals = eigen_vals$values) %>%
 
 ```{r}
 eigen_vals$vectors[,1]
+
+cor(table3_8)
 ```
 
 # Deciding How Many Components to Retain
@@ -97,9 +99,6 @@ u <- function(n, p, eigens) {
   k <- length(eigens)
   
   (n - (2*p + 11)/6) *  (k *log(bar_lam) - sum(log(eigens)))
-  
-  
-  
 }
 
 n <- nrow(filter(t8_3, X1 != 1))
@@ -119,17 +118,12 @@ eigen_tbl %>%
 
 ```
 
-
-
- Uncorrelated examples
+Uncorrelated examples
  
 ```{r}
-
 mvtnorm::rmvnorm(mean = c(1,2,3,4), sigma = diag(c(1,2,3,4)), n = 1000) %>% 
   cov() %>% 
   eigen
-
-
 
 mvtnorm::rmvnorm(mean = c(1,2,3,4), sigma = diag(c(1,2,3,4)), n = 1000) %>% 
   cor() %>% 
@@ -147,7 +141,7 @@ s_t8_3
 ```{r}
 s_t8_3$vectors %>% 
   abs() %>% 
-  apply(2, which.max) # find the variable with the highest eigenvector value
+  apply(MARGIN = 2, which.max) # find the variable with the highest eigenvector value
 
 ```
 

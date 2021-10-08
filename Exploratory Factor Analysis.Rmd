@@ -1,0 +1,78 @@
+---
+title: "Exploratory Factor Analysis"
+date: "10/07/2021"
+output:
+  html_document: default
+---
+
+# Exploratory Factor Analysis
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(here)
+```
+
+
+Drug use data (from 5.9.2) in Everitt (applied MVA with R)
+
+
+```{r}
+d <-
+ c(0.447,          
+   0.422, 0.619,       
+   0.435, 0.604, 0.583,        
+   0.114, 0.068, 0.053, 0.115,        
+   0.203, 0.146, 0.139, 0.258, 0.349,   
+   0.091, 0.103, 0.110, 0.122, 0.209, 0.221,
+   0.082, 0.063, 0.066, 0.097, 0.321, 0.355, 0.201,
+   0.513, 0.445, 0.365, 0.482, 0.186, 0.315, 0.150, 0.154,
+   0.304, 0.318, 0.240, 0.368, 0.303, 0.377, 0.163, 0.219, 0.534,
+   0.245, 0.203, 0.183, 0.255, 0.272, 0.323, 0.310, 0.288, 0.301, 0.302,
+   0.101, 0.088, 0.074, 0.139, 0.279, 0.367, 0.232, 0.320, 0.204, 0.368, 0.340,
+   0.245, 0.199, 0.184, 0.293, 0.278, 0.545, 0.232, 0.314, 0.394, 0.467, 0.392, 0.511)
+
+druguse <- diag(13) / 2
+
+druguse[upper.tri(druguse)] <- d
+
+druguse <- druguse + t(druguse)
+
+rownames(druguse) <- colnames(druguse) <- c("cigarettes", "beer", "wine", "liquor", "cocaine",
+         "tranquillizers", "drug store medication", "heroin",
+         "marijuana", "hashish", "inhalants", "hallucinogenics", "amphetamine")
+
+```
+
+```{r}
+druguse %>% 
+  corrplot::corrplot(type = "lower")
+```
+
+# Determine Factor Numbers
+
+```{r}
+sapply(1:7, function(nf)
+      factanal(covmat = druguse, factors = nf,
+               method = "mle", n.obs = 1634)$PVAL) %>% 
+  format.pval()
+
+
+
+eigen(druguse)$values %>% plot
+
+```
+
+```{r}
+fact_2_analysis <- factanal(covmat = druguse, factors = 2,
+               method = "mle", n.obs = 1634)
+
+fact_6_analysis <- factanal(covmat = druguse, factors = 6,
+               method = "mle", n.obs = 1634)
+```
+
+
+```{r}
+fact
+```
+
