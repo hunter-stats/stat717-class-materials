@@ -40,7 +40,6 @@ ggplot(sub_tab_3_8, aes(x = X1, y = X2)) +
 Proportion of variance
 
 ```{r}
-
 eigen_vals <- eigen(cov(table3_8))
 
 tibble(eigen_vals = eigen_vals$values) %>% 

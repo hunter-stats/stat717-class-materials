@@ -1,6 +1,6 @@
 ---
 title: "Exploratory Factor Analysis"
-date: "10/07/2021"
+date: "10/14/2021"
 output:
   html_document: default
 ---
@@ -11,6 +11,7 @@ output:
 library(dplyr)
 library(ggplot2)
 library(here)
+library(MVA)
 ```
 
 
@@ -41,12 +42,12 @@ druguse <- druguse + t(druguse)
 rownames(druguse) <- colnames(druguse) <- c("cigarettes", "beer", "wine", "liquor", "cocaine",
          "tranquillizers", "drug store medication", "heroin",
          "marijuana", "hashish", "inhalants", "hallucinogenics", "amphetamine")
-
+druguse
 ```
 
 ```{r}
 druguse %>% 
-  corrplot::corrplot(type = "lower")
+  corrplot::corrplot(type = "lower", diag = F, method = "shade")
 ```
 
 # Determine Factor Numbers
@@ -55,24 +56,56 @@ druguse %>%
 sapply(1:7, function(nf)
       factanal(covmat = druguse, factors = nf,
                method = "mle", n.obs = 1634)$PVAL) %>% 
-  format.pval()
-
-
+  format.pval() 
 
 eigen(druguse)$values %>% plot
-
 ```
 
 ```{r}
-fact_2_analysis <- factanal(covmat = druguse, factors = 2,
-               method = "mle", n.obs = 1634)
+#scores not possible without 
+fact_2_analysis <- factanal(covmat = druguse, factors = 2, n.obs = 1634)
 
-fact_6_analysis <- factanal(covmat = druguse, factors = 6,
-               method = "mle", n.obs = 1634)
+fact_6_analysis <- factanal(covmat = druguse, factors = 6, n.obs = 1634)
 ```
 
 
 ```{r}
-fact
+fact_6_analysis
+```
+```{r}
+fact_2_analysis
+```
+
+```{r}
+# run this to get life table
+demo("Ch-EFA", echo = FALSE, ask = FALSE)
+```
+
+```{r}
+life
+```
+
+```{r}
+life %>% 
+  cor() %>% 
+  corrplot::corrplot(type = "lower", diag = F, method = "shade", order = "hclust")
+```
+
+```{r}
+sapply(1:3, function(f)
+      factanal(life, factors = f)$PVAL)
+
+```
+
+```{r}
+factanal(life, factors = 3, method ="mle")
+```
+
+```{r}
+f_w_scores <- factanal(life, factors = 3, method ="mle", scores = "regression")
+```
+
+```{r}
+f_w_scores$scores
 ```
 
