@@ -1,0 +1,100 @@
+---
+title: "Confirmatory Factor Analysis"
+date: "10/21/2021"
+output:
+  html_document: default
+---
+
+
+```{r}
+library(here)
+library(ggplot2)
+library(dplyr)
+
+
+table14_1 <- readr::read_delim(here('ma_book_data', 'T14_1_GRADES.dat'),
+                               delim = "   ",
+                             col_names = c("lab", "hw", "popquiz", 
+                                           "exam1", "exam2", "finalexam"))
+
+```
+
+```{r}
+table14_1
+```
+
+
+
+```{r}
+
+mod1_def <- sem::specifyEquations(
+  covs=c("f1, f2"), #'lab', 'popquiz', 'exam1', 'exam2', 'finalexam', 'hw'),
+  # endog.variances = FALSE,
+text = "
+  lab = lambda11*f1
+  hw = 1*f1
+  popquiz = lambda31*f1 + lambda32*f2
+  exam1 = lambda42*f2
+  exam2 = lambda52*f2
+  finalexam = 1*f2"
+)
+
+mod1 <- sem::sem(mod1_def, cov(table14_1), N = nrow(table14_1))
+
+summary(mod1, fit.indices = c("GFI", "AGFI", "RMSEA", "NFI", "NNFI", 
+      "CFI", "RNI", "IFI", "SRMR"))
+```
+
+```{r}
+
+mod1a_def <- sem::specifyEquations(
+  # removed variance from hw
+  covs=c("f1, f2", 'lab', 'popquiz', 'exam1', 'exam2', 'finalexam'),
+   endog.variances = FALSE,
+text = "
+  lab = lambda11*f1
+  hw = 1*f1
+  popquiz = lambda31*f1 + lambda32*f2
+  exam1 = lambda42*f2
+  exam2 = lambda52*f2
+  finalexam = 1*f2"
+)
+
+mod1a <- sem::sem(mod1a_def, cov(table14_1), N = nrow(table14_1))
+
+
+# Rencher gives Bentler's CFI, RMSEA, 
+summary(mod1a, fit.indices = c("GFI", "AGFI", "RMSEA", "NFI", "NNFI", 
+      "CFI", "RNI", "IFI", "SRMR"))
+```
+
+```{r}
+mod2_def <- sem::specifyEquations(
+  # hw added back in to match rencher
+  covs=c("f1, f2", 'lab', 'popquiz', 'exam1', 'exam2', 'finalexam', 'hw'),
+   endog.variances = FALSE,
+text = "
+  lab = lambda11*f1
+  hw = 1*f1
+  popquiz = lambda32*f2
+  exam1 = lambda42*f2
+  exam2 = lambda52*f2
+  finalexam = 1*f2"
+)
+
+mod2 <- sem::sem(mod2_def, cov(table14_1), N = nrow(table14_1))
+
+
+# Rencher gives Bentler's CFI, RMSEA, 
+summary(mod2, fit.indices = c("GFI", "AGFI", "RMSEA", "NFI", "NNFI", 
+      "CFI", "RNI", "IFI", "SRMR"))
+```
+
+```{r}
+sem::pathDiagram(mod1)
+```
+
+```{r}
+sem::pathDiagram(mod2)
+```
+
