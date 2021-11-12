@@ -12,8 +12,8 @@ library(ggplot2)
 library(dplyr)
 
 table15_1 <- readr::read_table(here('ma_book_data', 'T15_1_CITYCRIME.dat'),
-                               # delim = "\t",
-                             col_names = c("city", "murder", "rape", "robbery", "assault", "burglary", "arceny", "autotheft"))
+                             col_names = c("city", "murder", "rape", 
+                                           "robbery", "assault", "burglary", "arceny", "autotheft"))
 
 mat_15_1 <- as.matrix(table15_1[, -1])
 rownames(mat_15_1) <- table15_1$city
@@ -22,6 +22,7 @@ rownames(mat_15_1) <- table15_1$city
 
 
 ```{r}
+dim(mat_15_1)
 mat_15_1
 ```
 
@@ -31,6 +32,10 @@ dist_mat_15_1 <- dist(mat_15_1, method = "euclidean")
 
 ```{r}
 single_link <- hclust(dist_mat_15_1, method = "single")
+```
+
+```{r}
+single_link
 ```
 
 
