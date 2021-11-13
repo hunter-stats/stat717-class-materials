@@ -62,3 +62,103 @@ purrr::walk(all_clust, plot)
 ```
 
 
+## Non-Hierarchical Methods
+
+```{r}
+table15_7 <- readr::read_table(here('ma_book_data', 'T15_7_PROTEIN.dat'),
+                               col_names = c("country", "redmeat", "whitemeat", 
+                                           "eggs", "milk", "fish", "cereals", "starchy", "nuts", "fruitveg")
+                               
+                               )
+
+table15_7
+mat15_7 <- as.matrix(table15_7[,-1])
+rownames(mat15_7) <- table15_7$country
+
+
+mat15_7
+scaled_mat15_7 <- scale(mat15_7)
+```
+
+
+### Forgy Algorithm
+
+```{r}
+# note I had to run this a few times to make sure
+set.seed(2398)
+random_start <- kmeans(scaled_mat15_7, centers = 5, algorithm = "Forgy")
+```
+
+```{r}
+
+lda_random <- MASS::lda(scaled_mat15_7 ,random_start$cluster )
+
+as_tibble(predict(lda_random)$x) %>% 
+  mutate(cluster = random_start$cluster) %>% 
+  ggplot(aes(x = LD1, y = LD2, label = cluster)) + 
+  geom_text()
+
+```
+
+
+### Default Algorithm
+
+```{r}
+# this one was more consistent
+set.seed(2398)
+random_start <- kmeans(scaled_mat15_7, centers = 5, algorithm = "Hartigan-Wong")
+```
+
+```{r}
+
+lda_random <- MASS::lda(scaled_mat15_7 ,random_start$cluster )
+
+as_tibble(predict(lda_random)$x) %>% 
+  mutate(cluster = random_start$cluster) %>% 
+  ggplot(aes(x = LD1, y = LD2, label = cluster)) + 
+  geom_text()
+
+```
+
+
+### Centroids from average cluster
+
+```{r}
+(hclust_clusters <- hclust(dist(scaled_mat15_7), method = "average") %>% 
+  cutree(k = 5))
+
+
+(hclust_means <- split(as.data.frame(scaled_mat15_7), hclust_clusters) %>% 
+  purrr::map(colMeans) %>% 
+  purrr::reduce(rbind))
+
+
+centroid_start <- kmeans(scaled_mat15_7, centers = hclust_means)
+```
+
+```{r}
+# the LDA is not the same as in the book - I'm not sure why that is but the algorithm may be different
+lda_centroid <- MASS::lda(scaled_mat15_7 ,centroid_start$cluster )
+
+as_tibble(predict(lda_centroid)$x) %>% 
+  mutate(cluster = centroid_start$cluster) %>% 
+  ggplot(aes(x = LD1, y = LD2, label = cluster)) + 
+  geom_text()
+
+
+centroid_start
+```
+
+```{r}
+dist_from_cent <- centroid_start$cluster %>% 
+  purrr::imap_dbl(function(clust, country) {
+    
+    clust_center <- centroid_start$centers[clust, ]
+    sqrt(sum((scaled_mat15_7[country, ] - clust_center)^2))
+  })
+
+split( dist_from_cent, f = centroid_start$cluster) %>% 
+  purrr::map(sort)
+
+```
+
