@@ -162,3 +162,40 @@ split( dist_from_cent, f = centroid_start$cluster) %>%
 
 ```
 
+
+## Clustering Variables
+
+```{r}
+
+mat_15_1_transformed <- cbind(mat_15_1, "inv_burglary" = 1/(mat_15_1[,"burglary"]))
+
+(1 - abs(cor(mat_15_1_transformed, method = "spearman"))) %>% 
+  as.dist() %>% 
+  hclust(method = "average") %>% 
+  plot()
+
+
+(1 - abs(cor(mat_15_1_transformed, method = "pearson"))) %>% 
+  as.dist() %>% 
+  hclust(method = "average") %>% 
+  plot()
+```
+
+## Mixtures
+
+```{r}
+library(mclust)
+
+mclust_obj <- Mclust(scale(mat15_7, center = F, scale = F), G = 5, modelNames = "EEE")
+mclust_obj$parameters
+
+
+predict(mclust_obj)
+
+
+setNames(predict(mclust_obj)$classification, rownames(mat15_7)) %>% 
+  sort()
+
+
+```
+
