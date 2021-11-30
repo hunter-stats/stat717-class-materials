@@ -86,7 +86,9 @@ scaled_mat15_7 <- scale(mat15_7)
 ```{r}
 # note I had to run this a few times to make sure
 set.seed(2398)
+
 random_start <- kmeans(scaled_mat15_7, centers = 5, algorithm = "Forgy")
+random_start
 ```
 
 ```{r}
@@ -128,6 +130,7 @@ as_tibble(predict(lda_random)$x) %>%
   cutree(k = 5))
 
 
+
 (hclust_means <- split(as.data.frame(scaled_mat15_7), hclust_clusters) %>% 
   purrr::map(colMeans) %>% 
   purrr::reduce(rbind))
@@ -152,7 +155,6 @@ centroid_start
 ```{r}
 dist_from_cent <- centroid_start$cluster %>% 
   purrr::imap_dbl(function(clust, country) {
-    
     clust_center <- centroid_start$centers[clust, ]
     sqrt(sum((scaled_mat15_7[country, ] - clust_center)^2))
   })
@@ -186,16 +188,15 @@ mat_15_1_transformed <- cbind(mat_15_1, "inv_burglary" = 1/(mat_15_1[,"burglary"
 ```{r}
 library(mclust)
 
-mclust_obj <- Mclust(scale(mat15_7, center = F, scale = F), G = 5, modelNames = "EEE")
-mclust_obj$parameters
+mclust_obj <- Mclust(scale(mat15_7, center = F, scale = F), 
+                     G = 5, 
+                     modelNames = "EEE")
 
+mclust_obj$parameters
 
 predict(mclust_obj)
 
-
 setNames(predict(mclust_obj)$classification, rownames(mat15_7)) %>% 
   sort()
-
-
 ```
 
