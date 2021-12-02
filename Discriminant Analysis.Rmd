@@ -1,0 +1,98 @@
+---
+title: "Discriminant Analysis"
+date: "12/02/2021"
+output:
+  html_document: default
+editor_options: 
+  chunk_output_type: console
+---
+
+
+```{r}
+library(here)
+library(ggplot2)
+library(dplyr)
+```
+
+
+```{r}
+steel <- readr::read_fwf(here('ma_book_data','T8_1_STEEL.DAT'))
+colnames(steel) <- c('temp', 'yp', 'strength')
+
+steel$temp <- as.factor(steel$temp)
+steel
+```
+
+```{r}
+steel %>% 
+  ggplot(aes(x = yp, y = strength, color = temp)) +
+  geom_point()
+
+steel_mat <- as.matrix(steel[,-1])
+rownames(steel_mat) <- steel$temp
+```
+
+```{r}
+t2_stat <- function(prob, p, nu) {
+  # based on Eq 5.7
+  qf(p = prob,  df1 = p, df2 = nu - p + 1) * 
+    nu * p/(nu - p + 1)
+  
+}
+
+calc_t2_stat <- function(x, y) {
+  calcs <- list(x, y) %>%
+    purrr::map(function(i) {
+      list(y = colMeans(i),
+           S = cov(i),
+           n = nrow(i))
+    })
+  
+  
+  S_pl <- 1 / (calcs[[1]]$n + calcs[[2]]$n - 2) *
+    (((calcs[[1]]$n - 1) * calcs[[1]]$S) + ((calcs[[2]]$n - 1) * calcs[[2]]$S))
+  
+  T2 <-
+    (calcs[[1]]$n * calcs[[2]]$n) / (calcs[[1]]$n + calcs[[2]]$n) *
+    t(calcs[[1]]$y - calcs[[2]]$y) %*% solve(S_pl) %*% (calcs[[1]]$y - calcs[[2]]$y)
+  
+  list(S_pl = S_pl,
+       # convert from matrix to atomic
+       T2 = as.numeric(T2))
+  
+}
+
+
+split_steel <- split(steel %>% select(-temp), steel$temp, drop = T) 
+
+h_test <- Hotelling::hotelling.test(split_steel[[1]], split_steel[[2]])
+
+pooled_var <- calc_t2_stat(split_steel[[1]], split_steel[[2]])$S_pl
+
+(y1_bar <- colMeans(steel_mat[rownames(steel_mat) == 1, ]))
+(y2_bar <- colMeans(steel_mat[rownames(steel_mat) == 2, ]))
+
+(a <- solve(pooled_var) %*% (y1_bar - y2_bar))
+
+
+(steel_mat %*% a)
+```
+
+
+
+```{r}
+line_slope = -a[2,1]/a[1,1]
+```
+
+```{r}
+
+point_pass_through <- colMeans(steel_mat)
+
+y_inter <- point_pass_through["strength"] - point_pass_through["yp"]* line_slope
+
+steel %>% 
+  ggplot(aes(x = yp, y = strength, color = temp)) +
+  geom_point() +
+  geom_abline(intercept = y_inter, slope = line_slope)
+```
+

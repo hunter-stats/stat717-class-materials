@@ -174,3 +174,40 @@ bind_rows(as_tibble(X, rownames = "lab"), as_tibble(Y, rownames = "lab")) %>%
 table_16_5
 ```
 
+# Biplots
+
+
+```{r}
+
+table15_1 <- readr::read_table(here('ma_book_data', 'T15_1_CITYCRIME.dat'),
+                             col_names = c("city", "murder", "rape", 
+                                           "robbery", "assault", "burglary", "arceny", "autotheft"))
+
+mat_15_1 <- as.matrix(table15_1[, -1])
+rownames(mat_15_1) <- table15_1$city
+
+eigen(cov(mat_15_1))$vectors[, 1:2] # coordinates for seven variables #A2
+
+prcomp(mat_15_1)$x[, 1:2] # coordinates for 16 citys (Z2)
+
+# not possible to plot both of them at this point since scale is vary different
+```
+
+```{r}
+(crime_svd <- svd(scale(mat_15_1, scale = F)))
+
+(points_rep <- (crime_svd$u %*% sqrt(diag(crime_svd$d)))[,1:2])
+(col_rep <- (crime_svd$v %*% sqrt(diag(crime_svd$d)))[,1:2])
+
+rownames(points_rep) <- rownames(mat_15_1)
+rownames(col_rep) <- colnames(mat_15_1)
+
+bind_rows(as_tibble(points_rep, rownames = "lab"), 
+          as_tibble(col_rep, rownames = "lab")) %>% 
+  mutate(column = lab %in% rownames(col_rep)) %>% 
+  ggplot(aes(x = V1, y = V2, label = lab, color = column)) + geom_text()
+
+crime_svd
+
+```
+
