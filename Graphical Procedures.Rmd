@@ -1,0 +1,176 @@
+---
+title: "Graphical Procedures"
+date: "12/02/2021"
+output:
+  html_document: default
+---
+
+
+```{r}
+library(here)
+library(ggplot2)
+library(dplyr)
+```
+
+## Example 16.1.2a
+
+```{r}
+(D <- matrix(c(0,        2.8284271, 2.8284271, 2.8284271, 2.8284271,
+     2.8284271,         0,         4, 5.6568542,         4,
+     2.8284271,         4,         0,         4, 5.6568542,
+     2.8284271, 5.6568542,         4,         0,         4,
+     2.8284271,         4, 5.6568542,         4,         0), nrow = 5, byrow = TRUE)
+)
+
+A <- round(-1/2 * D^2)
+
+B <- (diag(1, nrow = 5) - 1/5 * matrix(1, 5, 5)) %*% A %*% (diag(1, nrow = 5) - 1/5 * matrix(1, 5, 5))
+
+(B <- round(B))
+```
+
+
+```{r}
+eigs_b <- eigen(B)
+
+eigs_b
+
+Z <-  matrix(sqrt(eigs_b$values), nrow = 5, ncol = 5, byrow = T) * eigs_b$vectors
+
+round(Z, 4)
+
+```
+
+```{r}
+dist(Z)
+
+all.equal(as.matrix(dist(Z)), D, check.attributes = F)
+```
+
+# Example from Everitt Hothorn (Table 4.3)
+
+```{r, results='hide'}
+# load watervoles data
+demo("Ch-MDS", package = "MVA", verbose = F, ask = F, echo = F)
+```
+
+
+
+```{r}
+watervoles
+```
+
+```{r}
+voles_mds <- cmdscale(watervoles, k = 13, eig = TRUE)
+```
+
+```{r}
+voles_mds
+```
+
+
+
+```{r}
+voles_mds$points %>% as_tibble(.name_repair = "unique", rownames = "lab") %>% 
+  ggplot(aes(x = `...1`, y = `...2`, label = lab)) +
+  geom_text() +
+  theme_classic()
+```
+
+## Non metric multidimensional scaling
+
+```{r}
+library(MASS)
+data("voting", package = "HSAUR2")
+voting_mds <- isoMDS(voting)
+```
+
+```{r}
+voting_mds$points
+vot_dist_est <- dist(voting_mds$points)
+orig_upper_tri <- voting[upper.tri(voting)]
+fit_upper_tri <- as.matrix(vot_dist_est)[upper.tri(vot_dist_est)]
+```
+
+```{r}
+plot(orig_upper_tri, fit_upper_tri)
+```
+
+```{r}
+voting_mds$points %>% as_tibble(rownames = "name") %>% 
+  mutate(party = stringr::str_remove(name, "^[A-Za-z]+\\("),
+         party = stringr::str_remove(party, "\\)")) %>% 
+  ggplot(aes(x = V1, y = V2, label = party)) +
+  # geom_point() +
+  geom_text()
+```
+
+
+
+
+# Corresponence Analysis
+
+
+```{r}
+table_16_5 <- matrix(
+  data = c(17, 17, 12,
+           11,  9, 13,
+           11,  8, 19,
+           14,  7, 28),
+  nrow = 4, byrow = TRUE,
+  dimnames = list(1:4, 
+                  c('n', 'c', 's')
+                  )
+)
+
+
+(P <- table_16_5/sum(table_16_5))
+(R <- solve(diag(rowSums(P))) %*% P)
+(C <- P %*% solve(diag(colSums(P))))
+```
+
+```{r}
+
+
+pipj <- outer(rowSums(P), colSums(P))
+(chi_val <- sum((P - pipj)^2/pipj)*sum(table_16_5))
+
+pchisq(chi_val, df = (nrow(P) - 1) * (ncol(P) - 1), lower.tail = F)
+```
+
+
+```{r}
+d_inv_row <- chol(solve(diag(rowSums(P))))
+d_inv_col <- chol(solve(diag(colSums(P))))
+
+(Z <- d_inv_row %*% (P - pipj) %*% d_inv_col)
+
+Z_svd <- svd(Z)
+
+all.equal(with(Z_svd, u %*% diag(d) %*% t(v)), Z)
+
+A <- sqrt(diag(rowSums(P))) %*% Z_svd$u
+B <- sqrt(diag(colSums(P))) %*% Z_svd$v
+
+X <- solve(diag(rowSums(P))) %*% A %*% diag(Z_svd$d)
+Y <- solve(diag(colSums(P))) %*% B %*% diag(Z_svd$d)
+
+
+sum(Z_svd$d[1:2]^2)/sum(Z_svd$d^2)
+
+rownames(X) <- rownames(table_16_5)
+rownames(Y) <- colnames(table_16_5)
+
+bind_rows(as_tibble(X, rownames = "lab"), as_tibble(Y, rownames = "lab")) %>% 
+  ggplot(aes(x = V1, y = V2, label = lab)) + geom_text() +
+  coord_cartesian(ylim = c(-.2, .2))
+
+
+# If two row points (or two column points) are close, the two rows (or two columns) could be combined into a single category if necessary to improve the chi-square approximation.
+# The distance between a row point and a column point is not meaningful, but the proximity of a row point and a column point has meaning as noted in Section 16.2.1, namely that these two categories of the two variables occur more frequently than would be expected to happen by chance if the two variables were independent.
+```
+
+```{r}
+table_16_5
+```
+
