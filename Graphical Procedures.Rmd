@@ -3,6 +3,8 @@ title: "Graphical Procedures"
 date: "12/02/2021"
 output:
   html_document: default
+editor_options: 
+  chunk_output_type: inline
 ---
 
 
@@ -22,7 +24,7 @@ library(dplyr)
      2.8284271,         4, 5.6568542,         4,         0), nrow = 5, byrow = TRUE)
 )
 
-A <- round(-1/2 * D^2)
+(A <- round(-1/2 * D^2))
 
 B <- (diag(1, nrow = 5) - 1/5 * matrix(1, 5, 5)) %*% A %*% (diag(1, nrow = 5) - 1/5 * matrix(1, 5, 5))
 
@@ -43,7 +45,7 @@ round(Z, 4)
 
 ```{r}
 dist(Z)
-
+D
 all.equal(as.matrix(dist(Z)), D, check.attributes = F)
 ```
 
@@ -71,7 +73,8 @@ voles_mds
 
 
 ```{r}
-voles_mds$points %>% as_tibble(.name_repair = "unique", rownames = "lab") %>% 
+voles_mds$points %>% 
+  as_tibble(.name_repair = "unique", rownames = "lab") %>% 
   ggplot(aes(x = `...1`, y = `...2`, label = lab)) +
   geom_text() +
   theme_classic()
@@ -82,6 +85,8 @@ voles_mds$points %>% as_tibble(.name_repair = "unique", rownames = "lab") %>%
 ```{r}
 library(MASS)
 data("voting", package = "HSAUR2")
+?voting
+
 voting_mds <- isoMDS(voting)
 ```
 
@@ -97,19 +102,19 @@ plot(orig_upper_tri, fit_upper_tri)
 ```
 
 ```{r}
-voting_mds$points %>% as_tibble(rownames = "name") %>% 
+voting_mds$points %>% 
+  as_tibble(rownames = "name") %>% 
   mutate(party = stringr::str_remove(name, "^[A-Za-z]+\\("),
          party = stringr::str_remove(party, "\\)")) %>% 
-  ggplot(aes(x = V1, y = V2, label = party)) +
+  ggplot(aes(x = V1, y = V2, label = name, 
+             color = party)) +
   # geom_point() +
-  geom_text()
+  geom_text() +
+  theme_minimal() +
+  theme(panel.grid.minor = element_blank())
 ```
 
-
-
-
 # Corresponence Analysis
-
 
 ```{r}
 table_16_5 <- matrix(
@@ -130,12 +135,12 @@ table_16_5 <- matrix(
 ```
 
 ```{r}
-
-
 pipj <- outer(rowSums(P), colSums(P))
 (chi_val <- sum((P - pipj)^2/pipj)*sum(table_16_5))
 
-pchisq(chi_val, df = (nrow(P) - 1) * (ncol(P) - 1), lower.tail = F)
+pchisq(chi_val, 
+       df = (nrow(P) - 1) * (ncol(P) - 1), 
+       lower.tail = F)
 ```
 
 
@@ -161,7 +166,8 @@ sum(Z_svd$d[1:2]^2)/sum(Z_svd$d^2)
 rownames(X) <- rownames(table_16_5)
 rownames(Y) <- colnames(table_16_5)
 
-bind_rows(as_tibble(X, rownames = "lab"), as_tibble(Y, rownames = "lab")) %>% 
+bind_rows(as_tibble(X, rownames = "lab"), 
+          as_tibble(Y, rownames = "lab")) %>% 
   ggplot(aes(x = V1, y = V2, label = lab)) + geom_text() +
   coord_cartesian(ylim = c(-.2, .2))
 
@@ -208,6 +214,5 @@ bind_rows(as_tibble(points_rep, rownames = "lab"),
   ggplot(aes(x = V1, y = V2, label = lab, color = column)) + geom_text()
 
 crime_svd
-
 ```
 

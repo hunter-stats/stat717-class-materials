@@ -14,6 +14,7 @@ library(ggplot2)
 library(dplyr)
 ```
 
+# Discriminant Analysis
 
 ```{r}
 steel <- readr::read_fwf(here('ma_book_data','T8_1_STEEL.DAT'))
@@ -33,13 +34,6 @@ rownames(steel_mat) <- steel$temp
 ```
 
 ```{r}
-t2_stat <- function(prob, p, nu) {
-  # based on Eq 5.7
-  qf(p = prob,  df1 = p, df2 = nu - p + 1) * 
-    nu * p/(nu - p + 1)
-  
-}
-
 calc_t2_stat <- function(x, y) {
   calcs <- list(x, y) %>%
     purrr::map(function(i) {
@@ -96,3 +90,94 @@ steel %>%
   geom_abline(intercept = y_inter, slope = line_slope)
 ```
 
+```{r}
+table_8_3 <- readr::read_fwf(here::here('ma_book_data', 'T8_3_FOOTBALL.DAT'))
+colnames(table_8_3) <- c('group', 'wdim', 'circum', 'fbeye', 'eyehd', 'earhd', 'jaw')
+```
+
+
+```{r}
+# same values as book besides negative sign
+MASS::lda(group ~ ., data = table_8_3) 
+```
+
+## Standardize Coefficients
+
+```{r}
+
+calc_spl <- function(x) {
+  calcs <- x %>%
+    purrr::map(function(i) {
+      list(y = colMeans(i),
+           S = cov(i),
+           n = nrow(i))
+    })
+
+  part1 <- 1/(sum(purrr::map_dbl(calcs, "n")) - length(calcs))
+        
+  part2 <- purrr::map(calcs, ~(.x$n - 1) * .x$S) %>% 
+    purrr::reduce(`+`)
+  
+  part1 * part2
+  
+  
+  
+}
+
+
+x <- split(table_8_3[, -1], table_8_3$group)
+
+
+pooled_covar <- calc_spl(x)
+  
+lda_fit <- MASS::lda(group ~ ., data = table_8_3) 
+
+(scaled_lda <- sqrt(diag(diag(pooled_covar))) %*% lda_fit$scaling)
+
+order(abs(scaled_lda[, 1]), decreasing = T)
+```
+
+## Test for significance
+
+```{r}
+H <- purrr::map(x, function(h) {
+  out <- matrix(colMeans(h) - colMeans(bind_rows(x)), ncol = 1)
+  out %*% t(out)
+}) 
+
+
+H <- purrr::reduce(H, `+`) * nrow(bind_rows(x))/length(x)
+
+E <- purrr::map(x, function(e) {
+  out <- t(e) - colMeans(e)
+  out %*% t(out)
+}) %>% 
+  purrr::reduce(`+`)
+
+
+eigen_vals <- eigen(solve(E) %*% H)$values
+first_two_eigens <- as.numeric(eigen_vals[1:2])
+
+
+Lambda1 <- prod(1/(1+first_two_eigens))
+Lambda2 <- prod(1/(1+first_two_eigens[-1]))
+
+```
+
+## Plotting
+
+```{r}
+preds_vals <- predict(lda_fit)
+preds_vals
+
+# negative plotted to match book
+cbind(
+  as_tibble(preds_vals$x),
+  group = as.factor(table_8_3$group)
+) %>% 
+  ggplot(aes(x = -LD1, y = -LD2, color = group)) +
+  geom_point()
+
+```
+
+# Classification Analysis
