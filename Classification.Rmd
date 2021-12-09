@@ -1,0 +1,75 @@
+---
+title: "Classification"
+date: "12/11/2021"
+output:
+  html_document: default
+editor_options: 
+  chunk_output_type: console
+---
+
+
+```{r}
+library(here)
+library(ggplot2)
+library(dplyr)
+```
+
+
+# Classification Analysis
+
+```{r}
+table_8_3 <- readr::read_fwf(here::here('ma_book_data', 'T8_3_FOOTBALL.DAT'))
+colnames(table_8_3) <- c('group', 'wdim', 'circum', 'fbeye', 'eyehd', 'earhd', 'jaw')
+```
+
+```{r}
+
+calc_spl <- function(x) {
+  calcs <- x %>%
+    purrr::map(function(i) {
+      list(y = colMeans(i),
+           S = cov(i),
+           n = nrow(i))
+    })
+
+  part1 <- 1/(sum(purrr::map_dbl(calcs, "n")) - length(calcs))
+        
+  part2 <- purrr::map(calcs, ~(.x$n - 1) * .x$S) %>% 
+    purrr::reduce(`+`)
+  
+  part1 * part2
+  
+  
+  
+}
+
+
+x <- split(table_8_3[, -1], table_8_3$group)
+
+
+pooled_covar <- calc_spl(x)
+
+y_bars <- purrr::map(x, colMeans)
+
+#l1
+t(y_bars[[1]]) %*% solve(pooled_covar) %*% t(as.matrix(table_8_3[1, -1])) - 
+  1/2 * t(y_bars[[1]]) %*% solve(pooled_covar) %*% y_bars[[1]]
+
+#l2
+t(y_bars[[2]]) %*% solve(pooled_covar) %*% t(as.matrix(table_8_3[1, -1])) - 
+  1/2 * t(y_bars[[2]]) %*% solve(pooled_covar) %*% y_bars[[2]]
+
+#l3
+t(y_bars[[3]]) %*% solve(pooled_covar) %*% t(as.matrix(table_8_3[1, -1])) - 
+  1/2 * t(y_bars[[3]]) %*% solve(pooled_covar) %*% y_bars[[3]]
+
+
+# choose l1
+
+```
+
+
+```{r}
+
+```
+
