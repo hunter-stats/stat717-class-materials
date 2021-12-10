@@ -4,7 +4,7 @@ date: "12/02/2021"
 output:
   html_document: default
 editor_options: 
-  chunk_output_type: console
+  chunk_output_type: inline
 ---
 
 
@@ -59,7 +59,8 @@ calc_t2_stat <- function(x, y) {
 
 split_steel <- split(steel %>% select(-temp), steel$temp, drop = T) 
 
-h_test <- Hotelling::hotelling.test(split_steel[[1]], split_steel[[2]])
+h_test <- Hotelling::hotelling.test(split_steel[[1]],
+                                    split_steel[[2]])
 
 pooled_var <- calc_t2_stat(split_steel[[1]], split_steel[[2]])$S_pl
 
@@ -119,9 +120,6 @@ calc_spl <- function(x) {
     purrr::reduce(`+`)
   
   part1 * part2
-  
-  
-  
 }
 
 
@@ -134,6 +132,10 @@ lda_fit <- MASS::lda(group ~ ., data = table_8_3)
 
 (scaled_lda <- sqrt(diag(diag(pooled_covar))) %*% lda_fit$scaling)
 
+
+rownames(scaled_lda) <- rownames(pooled_covar)
+
+scaled_lda
 order(abs(scaled_lda[, 1]), decreasing = T)
 ```
 
@@ -162,6 +164,8 @@ first_two_eigens <- as.numeric(eigen_vals[1:2])
 Lambda1 <- prod(1/(1+first_two_eigens))
 Lambda2 <- prod(1/(1+first_two_eigens[-1]))
 
+Lambda1
+Lambda2
 ```
 
 ## Plotting
@@ -174,9 +178,29 @@ preds_vals
 cbind(
   as_tibble(preds_vals$x),
   group = as.factor(table_8_3$group)
-) %>% 
+) %>%
+  group_by(group) %>% 
+  mutate(mean_LD1 = mean(-LD1), mean_LD2 = mean(-LD2)) %>% 
   ggplot(aes(x = -LD1, y = -LD2, color = group)) +
-  geom_point()
+  geom_point(alpha = .8) +
+  geom_point(aes(x = mean_LD1, y = mean_LD2), size = 6) +
+  theme_minimal()
+
+
+
+cbind(
+  as_tibble(preds_vals$x),
+  group = as.factor(table_8_3$group)
+) %>% 
+  ggplot(aes(x = -LD1, color = group))+ 
+  geom_density()
+
+cbind(
+  as_tibble(preds_vals$x),
+  group = as.factor(table_8_3$group)
+) %>% 
+  ggplot(aes(x = -LD2, color = group))+ 
+  geom_density()
 
 ```
 

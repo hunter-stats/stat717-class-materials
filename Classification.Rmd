@@ -4,7 +4,7 @@ date: "12/11/2021"
 output:
   html_document: default
 editor_options: 
-  chunk_output_type: console
+  chunk_output_type: inline
 ---
 
 
@@ -51,16 +51,18 @@ pooled_covar <- calc_spl(x)
 
 y_bars <- purrr::map(x, colMeans)
 
+obs_to_check <- as.matrix(table_8_3[50, -1])
+
 #l1
-t(y_bars[[1]]) %*% solve(pooled_covar) %*% t(as.matrix(table_8_3[1, -1])) - 
+t(y_bars[[1]]) %*% solve(pooled_covar) %*% t(obs_to_check) - 
   1/2 * t(y_bars[[1]]) %*% solve(pooled_covar) %*% y_bars[[1]]
 
 #l2
-t(y_bars[[2]]) %*% solve(pooled_covar) %*% t(as.matrix(table_8_3[1, -1])) - 
+t(y_bars[[2]]) %*% solve(pooled_covar) %*% t(obs_to_check) - 
   1/2 * t(y_bars[[2]]) %*% solve(pooled_covar) %*% y_bars[[2]]
 
 #l3
-t(y_bars[[3]]) %*% solve(pooled_covar) %*% t(as.matrix(table_8_3[1, -1])) - 
+t(y_bars[[3]]) %*% solve(pooled_covar) %*% t(obs_to_check) - 
   1/2 * t(y_bars[[3]]) %*% solve(pooled_covar) %*% y_bars[[3]]
 
 
@@ -68,8 +70,16 @@ t(y_bars[[3]]) %*% solve(pooled_covar) %*% t(as.matrix(table_8_3[1, -1])) -
 
 ```
 
+```{r}
+t(y_bars[[1]]) %*% solve(pooled_covar)
+```
+
 
 ```{r}
+t(y_bars[[2]]) %*% solve(pooled_covar)
+```
 
+```{r}
+t(y_bars[[3]]) %*% solve(pooled_covar)
 ```
 
